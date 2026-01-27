@@ -1,0 +1,29 @@
+name: CI/CD Deploy Private App
+
+on:
+  push:
+      branches: [ main ]
+
+jobs:
+  deploy:
+      runs-on: ubuntu-latest
+
+      steps:
+        - name: Checkout Code
+          uses: actions/checkout@v4
+
+        - name: Deploy via Bastion to Private EC2
+          uses: appleboy/ssh-action@v1.0.3
+          with:
+            host: ${{ secrets.BASTION_HOST }}
+            username: ${{ secrets.BASTION_USER }}
+            key: ${{ secrets.BASTION_KEY }}
+            script: |
+              # Copy files to private EC2 via SSH from bastion
+              scp -i ~/.ssh/private_ec2_key -o StrictHostKeyChecking=no -r . ec2-user@${{ secrets.PRIVATE_EC2_IP }}:/opt/app
+
+              # SSH into private ec2 and restart app
+              ssh -i ~/.ssh/private_ec2_key -o StrictHostKeyChecking=no ec2-user@${{ secrets.PRIVATE_EC2_IP }} << 'EOF'
+                cd /opt/app
+                sudo systemctl restart app.service
+              EOF
