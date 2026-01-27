@@ -9,7 +9,7 @@ class HelloHandler(BaseHTTPRequestHandler):
                 self.send_response(200)
                 self.send_header("Content-type", "text/plain")
                 self.end_headers()
-                self.wfile.write(b"Hello, World!\n")
+                self.wfile.write(b"Hello, World!\nTesting CI/CD")
 
 if __name__ == "__main__":
         server = HTTPServer((HOST, PORT), HelloHandler)
