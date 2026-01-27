@@ -12,18 +12,42 @@ jobs:
         - name: Checkout Code
           uses: actions/checkout@v4
 
-        - name: Deploy via Bastion to Private EC2
+        - name: Deploy app from github repo to private instance app
           uses: appleboy/ssh-action@v1.0.3
           with:
             host: ${{ secrets.BASTION_HOST }}
             username: ${{ secrets.BASTION_USER }}
             key: ${{ secrets.BASTION_KEY }}
+            port: 22
             script: |
-              # Copy files to private EC2 via SSH from bastion
-              scp -i ~/.ssh/private_ec2_key -o StrictHostKeyChecking=no -r . ec2-user@${{ secrets.PRIVATE_EC2_IP }}:/opt/app
+              set -e #Exits immediately if any command fails
+  
+              # cleaning out the app directory
+              ssh -i ~/.ssh/private_ec2_key -o StrictHostKeyChecking=no ec2-user@${{ secrets.PRIVATE_EC2_IP }} "rm -rf /opt/app/*"
 
+              # Pull latest repo or clone if it doesn't exit
+              if [ -d ~/deploy ]; then
+                cd ~/deploy
+                git reset --hard
+                git clean -fd
+                git pull origin main
+              else
+                git clone https://github.com/ParkerB1/AWS-Private-Linux-VPC-Lab.git ~/deploy
+                cd ~/deploy
+              fi
+  
+              # Copy files to private EC2 via SSH from bastion
+              echo "Copying repo to private EC2..."
+              scp -i ~/.ssh/private_ec2_key -o StrictHostKeyChecking=no -r ./app.py ec2-user@${{ secrets.PRIVATE_EC2_IP }}:/opt/app
+              
               # SSH into private ec2 and restart app
+              echo "Restarting app service on private EC2..."
               ssh -i ~/.ssh/private_ec2_key -o StrictHostKeyChecking=no ec2-user@${{ secrets.PRIVATE_EC2_IP }} << 'EOF'
-                cd /opt/app
                 sudo systemctl restart app.service
               EOF
+
+              # Delete the app files from the public instance
+              rm -rf ~/deploy
+
+
+
