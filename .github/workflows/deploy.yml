@@ -22,14 +22,18 @@ jobs:
             script: |
               set -e #Exits immediately if any command fails
 
+              # cleaning out the app directory
+              ssh -i ~/.ssh/private_ec2_key -o StrictHostKeyChecking=no ec2-user@${{ secrets.PRIVATE_EC2_IP }} "rm -rf /opt/app/*"
+
               # Copy files to private EC2 via SSH from bastion
               echo "Copying repo to private EC2..."
-              scp -i ~/.ssh/private_ec2_key -o StrictHostKeyChecking=no -r . ec2-user@${{ secrets.PRIVATE_EC2_IP }}:/opt/app
+              scp -i ~/.ssh/private_ec2_key -o StrictHostKeyChecking=no -r ./app.py ec2-user@${{ secrets.PRIVATE_EC2_IP }}:/opt/app
 
               # SSH into private ec2 and restart app
               echo "Restarting app service on private EC2..."
               ssh -i ~/.ssh/private_ec2_key -o StrictHostKeyChecking=no ec2-user@${{ secrets.PRIVATE_EC2_IP }} << 'EOF'
                 sudo systemctl restart app.service
               EOF
+
 
 
