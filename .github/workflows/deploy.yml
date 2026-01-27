@@ -12,7 +12,21 @@ jobs:
         - name: Checkout Code
           uses: actions/checkout@v4
 
-        - name: Deploy via Bastion to Private EC2
+        - name: Copy files to private EC2 via Bastion
+          uses: appleboy/scp-action@master
+          with:
+            host: ${{ secrets.PRIVATE_EC2_IP }}
+            username: ec2-user
+            key: ${{ secrets.PRIVATE_EC2_KEY }}
+            port: 22
+            source: "app.py"
+            target: "/opt/app/"
+            proxy: ${{ secrets.BASTION_HOST }}
+            proxy_user: ${{ secrets.BASTION_USER }}
+            proxy_key: ${{ secrets.BASTION_KEY }}
+
+
+        - name: Restart app service
           uses: appleboy/ssh-action@v1.0.3
           with:
             host: ${{ secrets.BASTION_HOST }}
@@ -20,20 +34,10 @@ jobs:
             key: ${{ secrets.BASTION_KEY }}
             port: 22
             script: |
-              set -e #Exits immediately if any command fails
-
-              # cleaning out the app directory
-              ssh -i ~/.ssh/private_ec2_key -o StrictHostKeyChecking=no ec2-user@${{ secrets.PRIVATE_EC2_IP }} "rm -rf /opt/app/*"
-
-              # Copy files to private EC2 via SSH from bastion
-              echo "Copying repo to private EC2..."
-              scp -i ~/.ssh/private_ec2_key -o StrictHostKeyChecking=no -r ./app.py ec2-user@${{ secrets.PRIVATE_EC2_IP }}:/opt/app
-
-              # SSH into private ec2 and restart app
-              echo "Restarting app service on private EC2..."
               ssh -i ~/.ssh/private_ec2_key -o StrictHostKeyChecking=no ec2-user@${{ secrets.PRIVATE_EC2_IP }} << 'EOF'
                 sudo systemctl restart app.service
               EOF
+
 
 
 
