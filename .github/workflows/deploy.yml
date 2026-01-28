@@ -23,7 +23,9 @@ jobs:
               set -e #Exits immediately if any command fails
   
               # cleaning out the app directory
-              ssh -i ~/.ssh/private_ec2_key -o StrictHostKeyChecking=no ec2-user@${{ secrets.PRIVATE_EC2_IP }} "rm -rf /opt/app/*"
+              ssh -i ~/.ssh/private_ec2_key -o StrictHostKeyChecking=no ec2-user@${{ secrets.PRIVATE_EC2_IP }} "
+              find /opt/app/ -mindepth 1 -maxdepth 1 ! -name 'venv' -exec rm -rf {} + 
+              "
 
               # Pull latest repo or clone if it doesn't exit
               if [ -d ~/deploy ]; then
