@@ -24,7 +24,7 @@ jobs:
   
               # cleaning out the app directory
               ssh -i ~/.ssh/private_ec2_key -o StrictHostKeyChecking=no ec2-user@${{ secrets.PRIVATE_EC2_IP }} "
-              rm -rf /opt/app/app.py
+              rm -rf /opt/app/*
               "
 
               # Pull latest repo or clone if it doesn't exit
@@ -40,11 +40,22 @@ jobs:
   
               # Copy files to private EC2 via SSH from bastion
               echo "Copying repo to private EC2..."
-              scp -i ~/.ssh/private_ec2_key -o StrictHostKeyChecking=no -r ./app.py ec2-user@${{ secrets.PRIVATE_EC2_IP }}:/opt/app
+              scp -i ~/.ssh/private_ec2_key -o StrictHostKeyChecking=no -r app.py requirements.txt ec2-user@${{ secrets.PRIVATE_EC2_IP }}:/opt/app
               
               # SSH into private ec2 and restart app
               echo "Restarting app service on private EC2..."
               ssh -i ~/.ssh/private_ec2_key -o StrictHostKeyChecking=no ec2-user@${{ secrets.PRIVATE_EC2_IP }} << 'EOF'
+                # Switch to venv directory
+                cd /opt/app
+                
+                # create and activate new venv
+                pything3 -m venv venv
+                source venv/bin/activate
+
+                # Install dependencies
+                pip install -r requirements.txt
+
+                # Restart app service
                 sudo systemctl restart app.service
               EOF
 
