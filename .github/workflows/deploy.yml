@@ -24,7 +24,7 @@ jobs:
   
               # cleaning out the app directory
               ssh -i ~/.ssh/private_ec2_key -o StrictHostKeyChecking=no ec2-user@${{ secrets.PRIVATE_EC2_IP }} "
-              find /opt/app/ -mindepth 1 -maxdepth 1 ! -name 'venv' ! -name 'requirements.txt' -exec rm -rf {} + 
+              rm -rf /opt/app/app.py
               "
 
               # Pull latest repo or clone if it doesn't exit
