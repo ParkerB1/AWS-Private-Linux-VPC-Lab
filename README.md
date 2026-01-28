@@ -19,21 +19,22 @@ The goal is to practice **real-world cloud networking, Linux server management, 
 
 1. **VPC**  
    - 10.0.0.0/16 CIDR block  
-   - Public and private subnets across 2 AZs  
+   - 2 public subnets (different AZs) in 10.0.1.0/24 and 10.0.2.0/24 CIDR blocks
+   - 2 private subnets (different AZs) in 10.0.11.0/24 and 10.0.12.0/24 CIDR blocks
 
 2. **Public EC2 (Bastion Host)**  
    - Amazon Linux 2023  
    - Access point for SSH to private EC2  
-   - Security group allows SSH from my IP only  
+   - Security group allows SSH from my all IPs due to github actions deployer IP being dynamic
 
 3. **Private EC2 (App Server)**  
    - Amazon Linux 2023  
-   - Runs a Python Flask web application  
+   - Runs a Python Flask web application behind a Gunicorn web server, all within a dedicated Python virtual environment (venv)
    - Only accessible via bastion host  
    - Uses IAM role for CloudWatch logs  
 
 4. **Networking**  
-   - NAT instance in public subnet for internet access from private subnet  
+   - Amazon Linux 2023 EC2 instance configured to be a NAT instance in public subnet for internet access from private subnet  
    - Security groups restrict traffic according to least-privilege principle  
 
 5. **Monitoring & Notifications**  
@@ -52,7 +53,7 @@ The goal is to practice **real-world cloud networking, Linux server management, 
 |-------|-----------|
 | Cloud Provider | AWS (VPC, EC2, S3, CloudFront, IAM, SNS, CloudWatch) |
 | OS | Amazon Linux 2023 |
-| Programming | Python 3, Flask, BeautifulSoup |
+| Programming | Python 3, Flask, Gunicorn, Nginx |
 | CI/CD | GitHub Actions |
 | Networking | Bastion host, NAT instance, public/private subnets |
 | Monitoring | CloudWatch + SNS alerts |
@@ -74,26 +75,34 @@ The goal is to practice **real-world cloud networking, Linux server management, 
    - Use SSH agent forwarding from your laptop to connect to private EC2 via bastion host  
    - Configure key-based authentication for private EC2  
 
-4. **Install Python & Dependencies** on private EC2  
+4. **Create Virtual Environment** on private EC2
+
+```bash
+sudo mkdir /opt/myFlaskApp
+cd /opt/myFlaskApp
+python3 -m venv venv
+```
+
+5. **Install Python & Dependencies** in the venv directory  
 
 ```bash
 sudo dnf update -y
 sudo dnf install python3 python3-pip -y
-pip3 install flask requests beautifulsoup4 -y
+pip3 install flask gunicorn -y
 
 ```
 
-5. **Deploy Flask App**
+6. **Deploy Flask App**
     - Sample app.py runs on private EC2
     - Systemd service manages Flask application
-    - Nginx on public EC2 can act as reverse proxy if needed
+    - Nginx on public EC2 can acts as reverse proxy
 
-6. **Monitoring**
+7. **Monitoring**
     - Install CloudWatch agent on both EC2s
     - Configure alarms for CPU and disk usage
     - SNS notification trigger on alarm
 
-7. **CI/CD**
+8. **CI/CD**
     - GitHub Actions workflow deploys app code via SSH to EC2
 
 ---
