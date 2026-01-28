@@ -49,11 +49,8 @@ jobs:
                 cd /opt/app
 
                 # create and activate new venv
-                python3 -m venv venv
+                python3.11 -m venv venv
                 source venv/bin/activate
-
-                # Upgrade pip to newer version
-                /opt/app/venv/bin/python3 -m pip install --upgrade pip
 
                 # Install dependencies
                 pip install -r requirements.txt
