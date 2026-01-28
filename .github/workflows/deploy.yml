@@ -24,7 +24,7 @@ jobs:
   
               # cleaning out the app directory
               ssh -i ~/.ssh/private_ec2_key -o StrictHostKeyChecking=no ec2-user@${{ secrets.PRIVATE_EC2_IP }} "
-              rm -rf /opt/app/*
+              sudo rm -rf /opt/app/*
               "
 
               # Pull latest repo or clone if it doesn't exit
