@@ -47,9 +47,9 @@ jobs:
               ssh -i ~/.ssh/private_ec2_key -o StrictHostKeyChecking=no ec2-user@${{ secrets.PRIVATE_EC2_IP }} << 'EOF'
                 # Switch to venv directory
                 cd /opt/app
-                
+
                 # create and activate new venv
-                pything3 -m venv venv
+                python3 -m venv venv
                 source venv/bin/activate
 
                 # Install dependencies
