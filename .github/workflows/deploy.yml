@@ -1,63 +1,43 @@
-name: CI/CD Deploy Private App
+name: Deploy Flask App via SSM
 
 on:
   push:
-      branches: [ main ]
+    branches:
+      - main
+
+permissions:
+  id-token: write
+  contents: read
 
 jobs:
   deploy:
-      runs-on: ubuntu-latest
+    runs-on: ubuntu-latest
 
-      steps:
-        - name: Checkout Code
-          uses: actions/checkout@v4
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-        - name: Deploy app from github repo to private instance app
-          uses: appleboy/ssh-action@v1.0.3
-          with:
-            host: ${{ secrets.BASTION_HOST }}
-            username: ${{ secrets.BASTION_USER }}
-            key: ${{ secrets.BASTION_KEY }}
-            port: 22
-            script: |
-              set -e #Exits immediately if any command fails
-  
-              # cleaning out the app directory
-              ssh -i ~/.ssh/private_ec2_key -o StrictHostKeyChecking=no ec2-user@${{ secrets.PRIVATE_EC2_IP }} "
-              sudo rm -rf /opt/app/*
-              "
+      - name: Configure AWS credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::946611569055:role/GitHub-SSM
+          aws-region: us-east-1
 
-              # Pull latest repo or clone if it doesn't exit
-              if [ -d ~/deploy ]; then
-                cd ~/deploy
-                git reset --hard
-                git clean -fd
-                git pull origin main
-              else
-                git clone https://github.com/ParkerB1/AWS-Private-Linux-VPC-Lab.git ~/deploy
-                cd ~/deploy
-              fi
-  
-              # Copy files to private EC2 via SSH from bastion
-              echo "Copying repo to private EC2..."
-              scp -i ~/.ssh/private_ec2_key -o StrictHostKeyChecking=no -r app.py requirements.txt ec2-user@${{ secrets.PRIVATE_EC2_IP }}:/opt/app
-              
-              # SSH into private ec2 and restart app
-              echo "Restarting app service on private EC2..."
-              ssh -i ~/.ssh/private_ec2_key -o StrictHostKeyChecking=no ec2-user@${{ secrets.PRIVATE_EC2_IP }} << 'EOF'
-                # Switch to venv directory
-                cd /opt/app
-
-                # create and activate new venv
-                python3.11 -m venv venv
-                source venv/bin/activate
-
-                # Install dependencies
-                pip install -r requirements.txt
-
-                # Restart app service
-                sudo systemctl restart app.service
-              EOF
-
-              # Delete the app files from the public instance
-              rm -rf ~/deploy
+      - name: Deploy to private EC2 via SSM
+        run: |
+          aws ssm send-command \
+            --document-name "AWS-RunShellScript" \
+            --targets "Key=tag:Role,Values=app-server" \
+            --comment "Deploy Flask app from GitHub Actions" \
+            --parameters commands='[
+              "set -e",
+              "sudo rm -rf /opt/app/*",
+              "cd /opt/app",
+              "git clone --depth 1 https://github.com/ParkerB1/AWS-Private-Linux-VPC-Lab.git .",
+              "rm -rf .git .github .gitignore LICENSE README.md",
+              "python3.11 -m venv venv",
+              "source venv/bin/activate",
+              "pip install -r requirements.txt",
+              "sudo systemctl restart app.service"
+            ]' \
+            --timeout-seconds 900
