@@ -105,6 +105,17 @@ pip3 install flask gunicorn -y
 8. **CI/CD**
     - GitHub Actions workflow deploys app code via SSH to EC2
 
+9. **IaC Automation**
+   - Designed a CloudFormation template that provisions the following:
+   -- VPC with public and private subnets across multiple AZs
+   -- Internet Gateway and routing for public subnets
+   -- NAT instance for private subnet outbound access
+   -- Bastion host (public EC2) with restricted SSH access
+   -- Private EC2 application server
+   -- Security groups following least-privilege principles
+   -- IAM roles and instance profiles
+   -- CloudWatch alarms and SNS notifications
+
 ---
 
 ## Project Highlights / Learning Outcomes
